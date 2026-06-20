@@ -2,6 +2,7 @@ package stats
 
 import (
 	"cy2/internal/layer"
+	"fmt"
 )
 
 type GridCell struct {
@@ -15,14 +16,18 @@ type GridCell struct {
 }
 
 type GridStats struct {
-	GridSize   int        `json:"grid_size"`
-	Rows       int        `json:"rows"`
-	Cols       int        `json:"cols"`
-	Cells      []GridCell `json:"cells"`
-	BadCells   []GridCell `json:"bad_cells"`
-	BadCount   int        `json:"bad_count"`
-	TotalCount int        `json:"total_count"`
-	BadRatio   float64    `json:"bad_ratio"`
+	GridSize         int        `json:"grid_size"`
+	Rows             int        `json:"rows"`
+	Cols             int        `json:"cols"`
+	Cells            []GridCell `json:"cells"`
+	BadCells         []GridCell `json:"bad_cells"`
+	BadCount         int        `json:"bad_count"`
+	TotalCount       int        `json:"total_count"`
+	BadRatio         float64    `json:"bad_ratio"`
+	WarningCount     int        `json:"warning_count"`
+	WarningCells     []GridCell `json:"warning_cells"`
+	WarningMessage   string     `json:"warning_message"`
+	WarningThreshold float64    `json:"warning_threshold"`
 }
 
 const (
@@ -41,7 +46,7 @@ const (
 	ThresholdBad       = -1.0
 )
 
-func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int) *GridStats {
+func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int, warningThreshold float64) *GridStats {
 	if ndvi == nil {
 		return nil
 	}
@@ -50,6 +55,13 @@ func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int) *GridStats {
 	}
 	if ndvi.Data == nil || len(ndvi.Data) != ndvi.Height {
 		return nil
+	}
+
+	if warningThreshold <= -1.0 {
+		warningThreshold = 0.3
+	}
+	if warningThreshold > 1.0 {
+		warningThreshold = 1.0
 	}
 
 	if gridSize <= 0 {
@@ -70,6 +82,7 @@ func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int) *GridStats {
 
 	cells := make([]GridCell, 0, rows*cols)
 	badCells := make([]GridCell, 0)
+	warningCells := make([]GridCell, 0)
 
 	for r := 0; r < rows; r++ {
 		for c := 0; c < cols; c++ {
@@ -78,6 +91,10 @@ func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int) *GridStats {
 
 			if cell.Status == StatusPoor || cell.Status == StatusBad {
 				badCells = append(badCells, cell)
+			}
+
+			if cell.Mean < warningThreshold {
+				warningCells = append(warningCells, cell)
 			}
 		}
 	}
@@ -89,15 +106,22 @@ func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int) *GridStats {
 		badRatio = float64(badCount) / float64(totalCount)
 	}
 
+	warningCount := len(warningCells)
+	warningMessage := generateWarningMessage(warningCount, totalCount, warningThreshold)
+
 	return &GridStats{
-		GridSize:   gridSize,
-		Rows:       rows,
-		Cols:       cols,
-		Cells:      cells,
-		BadCells:   badCells,
-		BadCount:   badCount,
-		TotalCount: totalCount,
-		BadRatio:   badRatio,
+		GridSize:         gridSize,
+		Rows:             rows,
+		Cols:             cols,
+		Cells:            cells,
+		BadCells:         badCells,
+		BadCount:         badCount,
+		TotalCount:       totalCount,
+		BadRatio:         badRatio,
+		WarningCount:     warningCount,
+		WarningCells:     warningCells,
+		WarningMessage:   warningMessage,
+		WarningThreshold: warningThreshold,
 	}
 }
 
@@ -207,5 +231,27 @@ func StatusToColor(status string) (int, int, int) {
 		return 178, 34, 34
 	default:
 		return 128, 128, 128
+	}
+}
+
+func generateWarningMessage(warningCount, totalCount int, threshold float64) string {
+	if warningCount == 0 {
+		return "🎉 所有区域长势都在警戒线以上，不需要施肥。"
+	}
+	if totalCount == 0 {
+		return "没有可分析的数据"
+	}
+
+	ratio := float64(warningCount) / float64(totalCount) * 100
+
+	switch {
+	case warningCount == 1:
+		return fmt.Sprintf("⚠️ 有 1 个区域需要施肥了（占比 %.1f%%），建议重点照顾一下。", ratio)
+	case warningCount <= 3:
+		return fmt.Sprintf("⚠️ 有 %d 个区域需要施肥了（占比 %.1f%%），面积不大，可以安排施肥。", warningCount, ratio)
+	case warningCount <= 10:
+		return fmt.Sprintf("⚠️ 有 %d 个区域需要施肥了（占比 %.1f%%），有一定面积，建议尽快处理。", warningCount, ratio)
+	default:
+		return fmt.Sprintf("⚠️ 有 %d 个区域需要施肥了（占比 %.1f%%），面积较大，建议全面排查施肥方案。", warningCount, ratio)
 	}
 }

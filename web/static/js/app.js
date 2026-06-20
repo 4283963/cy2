@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('red', redInput.files[0]);
         formData.append('nir', nirInput.files[0]);
         formData.append('grid_size', document.getElementById('grid-size').value);
+        formData.append('warning_threshold', document.getElementById('warning-threshold').value);
 
         try {
             const response = await fetch('/api/upload', {
@@ -70,6 +71,18 @@ document.addEventListener('DOMContentLoaded', function() {
         resultPlaceholder.classList.add('hidden');
         resultContent.classList.remove('hidden');
 
+        const warningBanner = document.getElementById('warning-banner');
+        if (result.grid.warning_count > 0) {
+            warningBanner.textContent = result.grid.warning_message;
+            warningBanner.classList.remove('hidden');
+            warningBanner.classList.add('has-warning');
+        } else {
+            warningBanner.textContent = result.grid.warning_message;
+            warningBanner.classList.remove('hidden');
+            warningBanner.classList.remove('has-warning');
+            warningBanner.classList.add('all-good');
+        }
+
         document.getElementById('stat-size').textContent =
             `${result.ndvi.width} × ${result.ndvi.height}`;
 
@@ -80,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `[${result.ndvi.min.toFixed(3)}, ${result.ndvi.max.toFixed(3)}]`;
 
         document.getElementById('stat-bad').textContent =
-            `${result.grid.bad_count} / ${result.grid.total_count}`;
+            `${result.grid.warning_count} / ${result.grid.total_count}`;
 
         document.getElementById('ndvi-image').src = result.ndvi_image;
 
@@ -90,15 +103,15 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('grid-total').textContent = result.grid.total_count;
 
         const badCellsList = document.getElementById('bad-cells-list');
-        if (result.grid.bad_cells.length === 0) {
-            badCellsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #68d391;">🎉 所有区域长势良好！</div>';
+        if (result.grid.warning_cells.length === 0) {
+            badCellsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #68d391;">🎉 所有区域都在警戒线以上！</div>';
         } else {
-            const topBad = result.grid.bad_cells.slice(0, 50);
+            const topBad = result.grid.warning_cells.slice(0, 50);
             badCellsList.innerHTML = topBad.map(cell => `
-                <div class="bad-cell-item">
+                <div class="bad-cell-item warning-cell">
                     <span class="cell-position">第${cell.row}行 · 第${cell.col}列</span>
                     <span class="cell-ndvi">NDVI: ${cell.mean.toFixed(4)}</span>
-                    <span class="cell-status status-${cell.status}">${getStatusText(cell.status)}</span>
+                    <span class="cell-status status-warning">需施肥</span>
                 </div>
             `).join('');
         }

@@ -110,6 +110,18 @@ func UploadAndAnalyze(c *gin.Context) {
 		gridSize = 2000
 	}
 
+	warningThresholdStr := c.DefaultPostForm("warning_threshold", "0.3")
+	warningThreshold, err := strconv.ParseFloat(warningThresholdStr, 64)
+	if err != nil {
+		warningThreshold = 0.3
+	}
+	if warningThreshold < -1.0 {
+		warningThreshold = -1.0
+	}
+	if warningThreshold > 1.0 {
+		warningThreshold = 1.0
+	}
+
 	id := uuid.New().String()
 	redExt := filepath.Ext(redFileHeader.Filename)
 	nirExt := filepath.Ext(nirFileHeader.Filename)
@@ -164,7 +176,7 @@ func UploadAndAnalyze(c *gin.Context) {
 		return
 	}
 
-	gridStats := stats.AnalyzeGrid(ndviResult, gridSize)
+	gridStats := stats.AnalyzeGrid(ndviResult, gridSize, warningThreshold)
 	if gridStats == nil {
 		os.Remove(redPath)
 		os.Remove(nirPath)

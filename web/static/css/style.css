@@ -363,6 +363,51 @@ header h1 {
     color: #c53030;
 }
 
+.status-warning {
+    background: #fc8181;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.warning-banner {
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 1em;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.warning-banner.has-warning {
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    color: #c53030;
+    border-left: 5px solid #c53030;
+}
+
+.warning-banner.all-good {
+    background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
+    color: #2f855a;
+    border-left: 5px solid #38a169;
+}
+
+.warning-cell {
+    animation: highlight 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes highlight {
+    from {
+        background: #fff5f5;
+    }
+    to {
+        background: #fed7d7;
+    }
+}
+
 footer {
     text-align: center;
     color: rgba(255, 255, 255, 0.8);

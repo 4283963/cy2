@@ -35,6 +35,12 @@
                         <span class="hint">每个统计格子的边长，越小分析越精细</span>
                     </div>
 
+                    <div class="form-group">
+                        <label for="warning-threshold">警戒线分数 (NDVI)</label>
+                        <input type="number" id="warning-threshold" name="warning_threshold" value="0.3" min="-1" max="1" step="0.05">
+                        <span class="hint">低于这个分数的格子会被标记为需要施肥</span>
+                    </div>
+
                     <button type="submit" id="analyze-btn" class="btn-primary">
                         🔍 开始分析
                     </button>
@@ -55,6 +61,8 @@
                 </div>
 
                 <div id="result-content" class="hidden">
+                    <div id="warning-banner" class="warning-banner hidden"></div>
+
                     <div class="stats-cards">
                         <div class="stat-card">
                             <div class="stat-label">图片尺寸</div>
