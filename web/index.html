@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多光谱长势分析系统</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌱 多光谱长势分析系统</h1>
+            <p class="subtitle">NDVI 植被指数计算 · 区域网格统计</p>
+        </header>
+
+        <div class="main-content">
+            <div class="panel upload-panel">
+                <h2>📤 上传图片</h2>
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label for="red-input">红光波段图片 (Red)</label>
+                        <input type="file" id="red-input" name="red" accept="image/*" required>
+                        <div class="preview" id="red-preview"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nir-input">红外光波段图片 (NIR)</label>
+                        <input type="file" id="nir-input" name="nir" accept="image/*" required>
+                        <div class="preview" id="nir-preview"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="grid-size">网格大小 (像素)</label>
+                        <input type="number" id="grid-size" name="grid_size" value="50" min="10" max="500" step="10">
+                        <span class="hint">每个统计格子的边长，越小分析越精细</span>
+                    </div>
+
+                    <button type="submit" id="analyze-btn" class="btn-primary">
+                        🔍 开始分析
+                    </button>
+                </form>
+
+                <div id="loading" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p>正在分析中，请稍候...</p>
+                </div>
+            </div>
+
+            <div class="panel result-panel">
+                <h2>📊 分析结果</h2>
+
+                <div id="result-placeholder" class="placeholder">
+                    <div class="placeholder-icon">📷</div>
+                    <p>请上传红光和红外光图片后开始分析</p>
+                </div>
+
+                <div id="result-content" class="hidden">
+                    <div class="stats-cards">
+                        <div class="stat-card">
+                            <div class="stat-label">图片尺寸</div>
+                            <div class="stat-value" id="stat-size">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">NDVI 均值</div>
+                            <div class="stat-value" id="stat-mean">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">NDVI 范围</div>
+                            <div class="stat-value" id="stat-range">-</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-label">长势差格子</div>
+                            <div class="stat-value" id="stat-bad">-</div>
+                        </div>
+                    </div>
+
+                    <div class="image-section">
+                        <h3>NDVI 伪彩色图</h3>
+                        <div class="image-container">
+                            <img id="ndvi-image" src="" alt="NDVI Image">
+                        </div>
+                        <div class="legend">
+                            <div class="legend-item"><span class="legend-color excellent"></span> 优秀 (≥0.7)</div>
+                            <div class="legend-item"><span class="legend-color good"></span> 良好 (0.5-0.7)</div>
+                            <div class="legend-item"><span class="legend-color moderate"></span> 中等 (0.3-0.5)</div>
+                            <div class="legend-item"><span class="legend-color poor"></span> 较差 (0.1-0.3)</div>
+                            <div class="legend-item"><span class="legend-color bad"></span> 差 (&lt;0.1)</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-section">
+                        <h3>网格统计详情</h3>
+                        <div class="grid-info">
+                            <span>网格大小: <strong id="grid-size-info">-</strong> 像素</span>
+                            <span>总行数: <strong id="grid-rows">-</strong></span>
+                            <span>总列数: <strong id="grid-cols">-</strong></span>
+                            <span>总格子数: <strong id="grid-total">-</strong></span>
+                        </div>
+
+                        <div class="bad-cells-section">
+                            <h4>⚠️ 长势较差的格子</h4>
+                            <div id="bad-cells-list" class="bad-cells-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>多光谱长势分析系统 · 桌面端控制台</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
