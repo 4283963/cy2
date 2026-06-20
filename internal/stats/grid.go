@@ -42,12 +42,31 @@ const (
 )
 
 func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int) *GridStats {
+	if ndvi == nil {
+		return nil
+	}
+	if ndvi.Width <= 0 || ndvi.Height <= 0 {
+		return nil
+	}
+	if ndvi.Data == nil || len(ndvi.Data) != ndvi.Height {
+		return nil
+	}
+
 	if gridSize <= 0 {
 		gridSize = 50
+	}
+	if gridSize > ndvi.Width+ndvi.Height {
+		gridSize = ndvi.Width
+		if gridSize <= 0 {
+			gridSize = 1
+		}
 	}
 
 	cols := (ndvi.Width + gridSize - 1) / gridSize
 	rows := (ndvi.Height + gridSize - 1) / gridSize
+	if cols <= 0 || rows <= 0 {
+		return nil
+	}
 
 	cells := make([]GridCell, 0, rows*cols)
 	badCells := make([]GridCell, 0)
@@ -83,16 +102,29 @@ func AnalyzeGrid(ndvi *layer.NDVIResult, gridSize int) *GridStats {
 }
 
 func calculateCell(ndvi *layer.NDVIResult, row, col, gridSize int) GridCell {
+	if ndvi == nil || ndvi.Data == nil {
+		return GridCell{Row: row, Col: col, Status: StatusBad}
+	}
+
 	startY := row * gridSize
 	endY := (row + 1) * gridSize
 	if endY > ndvi.Height {
 		endY = ndvi.Height
+	}
+	if startY < 0 {
+		startY = 0
+	}
+	if startY >= ndvi.Height {
+		return GridCell{Row: row, Col: col, Status: StatusBad}
 	}
 
 	startX := col * gridSize
 	endX := (col + 1) * gridSize
 	if endX > ndvi.Width {
 		endX = ndvi.Width
+	}
+	if startX < 0 {
+		startX = 0
 	}
 
 	sum := 0.0
@@ -101,8 +133,18 @@ func calculateCell(ndvi *layer.NDVIResult, row, col, gridSize int) GridCell {
 	maxVal := -1.0
 
 	for y := startY; y < endY; y++ {
+		if y >= len(ndvi.Data) {
+			break
+		}
+		rowData := ndvi.Data[y]
+		if rowData == nil {
+			continue
+		}
 		for x := startX; x < endX; x++ {
-			val := ndvi.Data[y][x]
+			if x >= len(rowData) {
+				break
+			}
+			val := rowData[x]
 			sum += val
 			count++
 			if val < minVal {
@@ -117,6 +159,10 @@ func calculateCell(ndvi *layer.NDVIResult, row, col, gridSize int) GridCell {
 	mean := 0.0
 	if count > 0 {
 		mean = sum / float64(count)
+	}
+	if count == 0 {
+		minVal = 0
+		maxVal = 0
 	}
 
 	status := classifyStatus(mean)
